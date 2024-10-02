@@ -100,17 +100,3 @@ class exstention:
 
         self.compilejava += f"Scratch.extensions.register(new {self.name}());\n"
         return self.compilejava
-
-if __name__ == "__main__":
-    custom = exstention(name = "test",id = "help",colors = {},icons = {})
-
-
-    @custom.add_block(text = "print[text]",
-                      args={"text" : {"type": argtypes.STRING.value, "defaultValue": "text"}},
-                      blocktype = blocktypes.COMMAND,
-                      terminal=False)
-    def printl(args):
-        print(args.text)
-    printl()
-
-    print(custom.compile())
