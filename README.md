@@ -8,3 +8,4 @@ to use scratch function type you must also use blocktypes enum and get the value
 no menu.
 no button.
 no events.
+only pure python code
