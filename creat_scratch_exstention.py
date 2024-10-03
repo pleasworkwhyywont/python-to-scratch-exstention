@@ -1,6 +1,7 @@
 from pscript import py2js
 from enum import Enum
-from re import sub 
+from collections.abc import Callable
+from re import sub,split
 from json import dumps
 
 class blocktypes(Enum):
@@ -21,7 +22,7 @@ class argtypes(Enum):
     SOUND = "Scratch.ArgumentType.SOUND"
 
 class block:
-    def __init__(self,func,text,args,blocktype,terminal : bool, funcname : str):
+    def __init__(self,func : Callable ,text  : str,args  : dict,blocktype : Enum ,terminal : bool, funcname : str):
         self.func = func
         self.text = text
         self.args = args
@@ -42,8 +43,8 @@ class exstention:
         self.compilejava = ""
 
         
-    def add_block(self,text,args,blocktype,terminal):
-        def reconizsed_func(func):
+    def add_block(self,text : str,args : dict,blocktype : Enum,terminal : bool):
+        def reconizsed_func(func : callable):
             def wrapper(*pars,**kwargs):
                 self.blocks.append(
                     block(
@@ -54,19 +55,33 @@ class exstention:
                     terminal,
                     func.__name__
                 ))
-                return
+                return func
             return wrapper
         return reconizsed_func
     
 #like the name says it auto compile to java script
     def compile(self):
-        self.compilejava += f"class {self.name} \n"
-        self.compilejava += " {\n"
+        def format_block_args(unformatedblockargs) -> dict:
+            blockargs = {}
+            oldblockargs = unformatedblockargs.args
+            for i in oldblockargs.keys():
+                if "defalt" in oldblockargs[i]:
+                    blockargs[i] = {"type" : oldblockargs[i]["type"].value,"default" : oldblockargs[i]["defalt"]}
+                if not "defalt" in oldblockargs[i]:
+                    blockargs[i] = {"type" : oldblockargs[i]["type"].value}
+            return blockargs
+
+        self.compilejava += f"class {self.name}"
+        self.compilejava += "{\n"
         for block in self.blocks:
-            self.compilejava += py2js(block.func)
-        self.compilejava += "getinfo() {\n"
+            func = py2js(block.func)
+            code = split("var .*;",func)
+            for command in code:
+                self.compilejava += f"{split(" = ",command)[0]};"
+                self.compilejava += command
+        self.compilejava += "getInfo() {\n"
         self.compilejava += "return {\n"
-        self.compilejava += f"name : '{self.name}',\n"
+        self.compilejava += f"name: '{self.name}',\n"
         self.compilejava += f"id : '{self.id}',\n"
 
         if "color1" in self.color:
@@ -89,14 +104,15 @@ class exstention:
             self.compilejava += f"opcode : '{block.funcname}',\n"
             self.compilejava += f"blockType : '{block.blocktype.value}',\n"
             # João Pedro on stackoverflow whoever you are thank you
-            self.compilejava += f"arguments : {sub("\"([^\"]+)\":", r"\1:", dumps(block.args))}\n"
+            self.compilejava += f"arguments : {sub("\"([^\"]+)\":", r"\1:", dumps(format_block_args(block)))},\n"
             self.compilejava += f"terminal : '{block.terminal}',\n"
             self.compilejava += "}\n"
             if not i == len(self.blocks) - 1:
                 self.compilejava += ","
         self.compilejava += "],\n"
         self.compilejava += f"menu : []\n"
-        self.compilejava += "};\n}\n"
-
+        self.compilejava += "};"
+        self.compilejava += "}"
+        self.compilejava += "}"
         self.compilejava += f"Scratch.extensions.register(new {self.name}());\n"
         return self.compilejava
