@@ -33,7 +33,7 @@ class block:
     def __getitem__(self,itemrequest):
         return exec(f"self.{itemrequest}")
 
-class exstention:
+class extension:
     def __init__(self,name : str , id : str , colors : dict,icons : dict):
         self.color = colors
         self.icons = icons
@@ -61,13 +61,13 @@ class exstention:
     
 #like the name says it auto compile to java script
     def compile(self):
-        def format_block_args(unformatedblockargs) -> dict:
+        def format_block_args(unformattedblockargs) -> dict:
             blockargs = {}
-            oldblockargs = unformatedblockargs.args
+            oldblockargs = unformattedblockargs.args
             for i in oldblockargs.keys():
-                if "defalt" in oldblockargs[i]:
+                if "default" in oldblockargs[i]:
                     blockargs[i] = {"type" : oldblockargs[i]["type"].value,"default" : oldblockargs[i]["defalt"]}
-                if not "defalt" in oldblockargs[i]:
+                if not "default" in oldblockargs[i]:
                     blockargs[i] = {"type" : oldblockargs[i]["type"].value}
             return blockargs
 
