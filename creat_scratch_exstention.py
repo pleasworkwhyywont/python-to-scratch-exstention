@@ -22,7 +22,7 @@ class argtypes(Enum):
     SOUND = "Scratch.ArgumentType.SOUND"
 
 class block:
-    def __init__(self,func : Callable ,text  : str,args  : dict,blocktype : Enum ,terminal : bool, funcname : str):
+    def __init__(self,func : Callable ,text  : str,args  : dict,blocktype : any ,terminal : bool, funcname : str):
         self.func = func
         self.text = text
         self.args = args
@@ -66,9 +66,9 @@ class extension:
             oldblockargs = unformattedblockargs.args
             for i in oldblockargs.keys():
                 if "default" in oldblockargs[i]:
-                    blockargs[i] = {"type" : oldblockargs[i]["type"].value,"default" : oldblockargs[i]["defalt"]}
+                    blockargs[i] = {"type" : oldblockargs[i]["type"].__qualname__,"default" : oldblockargs[i]["defalt"]}
                 if not "default" in oldblockargs[i]:
-                    blockargs[i] = {"type" : oldblockargs[i]["type"].value}
+                    blockargs[i] = {"type" : oldblockargs[i]["type"]}
             return blockargs
 
         self.compilejava += f"class {self.name}"
@@ -102,10 +102,10 @@ class extension:
             self.compilejava += "{\n"
             self.compilejava += f"text : '{block.text}',\n"
             self.compilejava += f"opcode : '{block.funcname}',\n"
-            self.compilejava += f"blockType : '{block.blocktype.value}',\n"
+            self.compilejava += f"blockType :  {block.blocktype.__qualname__},\n"
             # João Pedro on stackoverflow whoever you are thank you
             self.compilejava += f"arguments : {sub("\"([^\"]+)\":", r"\1:", dumps(format_block_args(block)))},\n"
-            self.compilejava += f"terminal : '{block.terminal}',\n"
+            self.compilejava += f"terminal : {format(block.terminal).lower()}\n"
             self.compilejava += "}\n"
             if not i == len(self.blocks) - 1:
                 self.compilejava += ","
