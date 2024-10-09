@@ -15,3 +15,5 @@ class Scratch:
             pass
         class BOOLEAN:
             pass
+        class CONDITIONAL:
+            pass

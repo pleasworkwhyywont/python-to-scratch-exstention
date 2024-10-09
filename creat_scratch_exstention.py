@@ -19,6 +19,8 @@ class extension:
         self.blocks = []
         self.compilejava = ""
         self.funcs = []
+        self.menus = {}
+        self.vars = []
 
     def add_block(self,**args):
         def reconizsed_func(func : Callable):
@@ -30,8 +32,12 @@ class extension:
             return wrapper
         return reconizsed_func
     
-#like the name says it auto compile to java script
-    def compile(self):
+    def add_menu(self,name,items : list):
+        self.menus[name] = items
+    def creat_variable(self,name):
+        self.vars.append(name)
+
+    def creat_exstention(self):
         def formatargs(args : dict):
             unformatedargs = args
             for key,value in unformatedargs.items():
@@ -42,6 +48,8 @@ class extension:
             return unformatedargs
         self.compilejava += f"class {self.name}"
         self.compilejava += "{\n"
+        for var in self.vars:
+            self.compilejava += f"{var};"
         for func in self.funcs:
             unparsedfunc = py2js(func)
             goodfuncs = split("var .*;",unparsedfunc)
@@ -67,8 +75,9 @@ class extension:
 
 
         self.compilejava += f"blocks : [\n"
+        dicttojson = compile("\"([^\"]+)\":")
         for i,block in enumerate(self.blocks):
-            unparsedstr = sub("\"([^\"]+)\":", r"\1:", dumps(formatargs(block)))
+            unparsedstr = dicttojson.sub(r"\1:", dumps(formatargs(block),indent=4))
             strpatters = findall("Scratch\\..*?\\..*?\"", unparsedstr)
             replacepatterns = findall("\"Scratch\\.?.*?\\.?.*?\"", unparsedstr)
             for index in range(len(replacepatterns)):
@@ -79,7 +88,7 @@ class extension:
             if not i+1 == len(self.blocks):
                 self.compilejava += ","
         self.compilejava += "],\n"
-        self.compilejava += f"menu : []\n"
+        self.compilejava += f"menus : {dicttojson.sub(string=dumps(formatargs(self.menus),indent=4),repl=r"\1:")}\n"
         self.compilejava += "};"
         self.compilejava += "}"
         self.compilejava += "}"
