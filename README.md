@@ -2,7 +2,8 @@ this is a python to scratch extensions module
 > [!WARNING]
 > init.py is a 0 byte file....
 > enjoy :)
-> [!badcode]
+
+>  [!badcode]
 > due to the fact that theres bealy any documentation about scratch vm and me beraly knowing
 > js theres aa high liklyhood that i am wrong
 # documentation
