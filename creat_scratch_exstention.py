@@ -1,37 +1,14 @@
 from pscript import py2js
-from enum import Enum
 from collections.abc import Callable
-from re import sub,split
+from re import sub,split,compile,findall
 from json import dumps
+#the only reson for this is so that the code can only see bool as javascript code
+class false:
+    pass
 
-class blocktypes(Enum):
-    COMMAND = "Scratch.BlockType.COMMAND"
-    REPORTER = "Scratch.BlockType.REPORTER"
-    BOOLEAN = "Scratch.BlockType.BOOLEAN"
-
-class argtypes(Enum):
-    STRING = "Scratch.ArgumentType.STRING"
-    NUMBER = "Scratch.ArgumentType.NUMBER"
-    BOOLEAN = "Scratch.ArgumentType.BOOLEAN"
-    COLOR = "Scratch.ArgumentType.COLOR"
-    ANGLE = "Scratch.ArgumentType.ANGLE"
-    MATRIX = "Scratch.ArgumentType.MATRIX"
-    NOTE = "Scratch.ArgumentType.NOTE"
-    IMAGE = "Scratch.ArgumentType.IMAGE"
-    COSTUME = "Scratch.ArgumentType.COSTUME"
-    SOUND = "Scratch.ArgumentType.SOUND"
-
-class block:
-    def __init__(self,func : Callable ,text  : str,args  : dict,blocktype : any ,terminal : bool, funcname : str):
-        self.func = func
-        self.text = text
-        self.args = args
-        self.blocktype = blocktype
-        self.terminal = terminal
-        self.funcname = funcname
-
-    def __getitem__(self,itemrequest):
-        return exec(f"self.{itemrequest}")
+#the only reson for this is so that the code can only see bool as javascript code
+class true:
+    pass
 
 class extension:
     def __init__(self,name : str , id : str , colors : dict,icons : dict):
@@ -41,42 +18,34 @@ class extension:
         self.id = id
         self.blocks = []
         self.compilejava = ""
+        self.funcs = []
 
-        
-    def add_block(self,text : str,args : dict,blocktype : Enum,terminal : bool):
-        def reconizsed_func(func : callable):
+    def add_block(self,**args):
+        def reconizsed_func(func : Callable):
             def wrapper(*pars,**kwargs):
-                self.blocks.append(
-                    block(
-                    func,
-                    text,
-                    args,
-                    blocktype,
-                    terminal,
-                    func.__name__
-                ))
+                args["opcode"] = func.__name__
+                self.funcs.append(func)
+                self.blocks.append(args)
                 return func
             return wrapper
         return reconizsed_func
     
 #like the name says it auto compile to java script
     def compile(self):
-        def format_block_args(unformattedblockargs) -> dict:
-            blockargs = {}
-            oldblockargs = unformattedblockargs.args
-            for i in oldblockargs.keys():
-                if "default" in oldblockargs[i]:
-                    blockargs[i] = {"type" : oldblockargs[i]["type"].__qualname__,"default" : oldblockargs[i]["defalt"]}
-                if not "default" in oldblockargs[i]:
-                    blockargs[i] = {"type" : oldblockargs[i]["type"]}
-            return blockargs
-
+        def formatargs(args : dict):
+            unformatedargs = args
+            for key,value in unformatedargs.items():
+                if isinstance(value,type):
+                    unformatedargs[key] = value.__qualname__
+                if isinstance(value,dict):
+                    unformatedargs[key] = formatargs(value)
+            return unformatedargs
         self.compilejava += f"class {self.name}"
         self.compilejava += "{\n"
-        for block in self.blocks:
-            func = py2js(block.func)
-            code = split("var .*;",func)
-            for command in code:
+        for func in self.funcs:
+            unparsedfunc = py2js(func)
+            goodfuncs = split("var .*;",unparsedfunc)
+            for command in goodfuncs:
                 self.compilejava += f"{split(" = ",command)[0]};"
                 self.compilejava += command
         self.compilejava += "getInfo() {\n"
@@ -99,15 +68,15 @@ class extension:
 
         self.compilejava += f"blocks : [\n"
         for i,block in enumerate(self.blocks):
-            self.compilejava += "{\n"
-            self.compilejava += f"text : '{block.text}',\n"
-            self.compilejava += f"opcode : '{block.funcname}',\n"
-            self.compilejava += f"blockType :  {block.blocktype.__qualname__},\n"
-            # João Pedro on stackoverflow whoever you are thank you
-            self.compilejava += f"arguments : {sub("\"([^\"]+)\":", r"\1:", dumps(format_block_args(block)))},\n"
-            self.compilejava += f"terminal : {format(block.terminal).lower()}\n"
-            self.compilejava += "}\n"
-            if not i == len(self.blocks) - 1:
+            unparsedstr = sub("\"([^\"]+)\":", r"\1:", dumps(formatargs(block)))
+            strpatters = findall("Scratch\\..*?\\..*?\"", unparsedstr)
+            replacepatterns = findall("\"Scratch\\.?.*?\\.?.*?\"", unparsedstr)
+            for index in range(len(replacepatterns)):
+                strpattern = strpatters[index]
+                unparsedstr = sub(pattern=replacepatterns[index],repl=strpattern[0:len(strpattern)-1],string=unparsedstr)
+            parsedstr = unparsedstr
+            self.compilejava += parsedstr
+            if not i+1 == len(self.blocks):
                 self.compilejava += ","
         self.compilejava += "],\n"
         self.compilejava += f"menu : []\n"

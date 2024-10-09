@@ -1,16 +1,17 @@
+from json import dumps
 class Scratch:
     class ArgumentType:
-        def STRING():
+        class STRING:
             pass
-        def NUMBER():
+        class NUMBER:
             pass
-        def BOOLEAN():
+        class BOOLEAN:
             pass
 
     class BlockType:
-        def COMMAND():
+        class COMMAND:
             pass
-        def REPORTER():
+        class REPORTER:
             pass
-        def BOOLEAN():
+        class BOOLEAN:
             pass
