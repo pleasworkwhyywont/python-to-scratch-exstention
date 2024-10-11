@@ -1,5 +1,5 @@
 this is a python to scratch extensions module
->  [!badcode]
+>  [!Warning]
 > due to the fact that theres bealy any documentation about scratch vm and me beraly knowing
 > js theres a high liklyhood that i am wrong
 # documentation
