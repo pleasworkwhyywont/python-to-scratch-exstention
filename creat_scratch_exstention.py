@@ -2,6 +2,7 @@ from pscript import py2js
 from collections.abc import Callable
 from re import sub,split,compile,findall
 from json import dumps
+
 #the only reson for this is so that the code can only see bool as javascript code
 class false:
     pass
@@ -24,17 +25,17 @@ class extension:
 
     def add_block(self,**args):
         def reconizsed_func(func : Callable):
-            def wrapper(*pars,**kwargs):
-                args["opcode"] = func.__name__
-                self.funcs.append(func)
-                self.blocks.append(args)
-                return func
+            args["opcode"] = func.__name__
+            self.funcs.append(func)
+            self.blocks.append(args)
+            def wrapper(**kwargs):
+                return func(type(**kwargs))
             return wrapper
         return reconizsed_func
     
     def add_menu(self,name,items : list):
         self.menus[name] = items
-    def creat_variable(self,name):
+    def add_variable(self,name):
         self.vars.append(name)
 
     def creat_exstention(self):
