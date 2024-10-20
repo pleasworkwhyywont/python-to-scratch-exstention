@@ -13,6 +13,7 @@ class true:
 
 class extension:
     def __init__(self,name : str , id : str , colors : dict,icons : dict):
+        self.dicttojson = compile("\"([^\"]+)\":")
         self.color = colors
         self.icons = icons
         self.name = name
@@ -22,6 +23,14 @@ class extension:
         self.funcs = []
         self.menus = {}
         self.vars = []
+
+    def add_function(self,func : Callable):
+        def reconize_function():
+            self.funcs.append(func)
+            def reg_function(*args,**kwargs):
+                return func(*args,**kwargs)
+            return reg_function
+        return reconize_function
 
     def add_block(self,**args):
         def reconizsed_func(func : Callable):
@@ -35,8 +44,12 @@ class extension:
     
     def add_menu(self,name,items : list):
         self.menus[name] = items
+
     def add_variable(self,name):
         self.vars.append(name)
+
+    def add_seporator(self):
+        self.funcs.append("---")
 
     def creat_exstention(self):
         def formatargs(args : dict):
@@ -47,10 +60,18 @@ class extension:
                 if isinstance(value,dict):
                     unformatedargs[key] = formatargs(value)
             return unformatedargs
+        def formatblockstr(block):
+            unparsedstr = self.dicttojson.sub(r"\1:", dumps(formatargs(block),indent=4))
+            strpatters = findall("Scratch\\..*?\\..*?\"", unparsedstr)
+            replacepatterns = findall("\"Scratch\\.?.*?\\.?.*?\"", unparsedstr)
+            for index in range(len(replacepatterns)):
+                strpattern = strpatters[index]
+                unparsedstr = sub(pattern=replacepatterns[index],repl=strpattern[0:len(strpattern)-1],string=unparsedstr)
+            return unparsedstr
         self.compilejava += f"class {self.name}"
         self.compilejava += "{\n"
         for var in self.vars:
-            self.compilejava += f"{var};"
+            self.compilejava += f"{var};\n"
         for func in self.funcs:
             unparsedfunc = py2js(func)
             goodfuncs = split("var .*;",unparsedfunc)
@@ -76,20 +97,15 @@ class extension:
 
 
         self.compilejava += f"blocks : [\n"
-        dicttojson = compile("\"([^\"]+)\":")
-        for i,block in enumerate(self.blocks):
-            unparsedstr = dicttojson.sub(r"\1:", dumps(formatargs(block),indent=4))
-            strpatters = findall("Scratch\\..*?\\..*?\"", unparsedstr)
-            replacepatterns = findall("\"Scratch\\.?.*?\\.?.*?\"", unparsedstr)
-            for index in range(len(replacepatterns)):
-                strpattern = strpatters[index]
-                unparsedstr = sub(pattern=replacepatterns[index],repl=strpattern[0:len(strpattern)-1],string=unparsedstr)
-            parsedstr = unparsedstr
-            self.compilejava += parsedstr
-            if not i+1 == len(self.blocks):
+        for place,i in enumerate(self.blocks):
+            if isinstance(i,dict):
+                self.compilejava += formatblockstr(i)
+            if isinstance(i,str):
+                self.compilejava += i
+            if not place+1 == len(self.blocks):
                 self.compilejava += ","
         self.compilejava += "],\n"
-        self.compilejava += f"menus : {dicttojson.sub(string=dumps(formatargs(self.menus),indent=4),repl=r"\1:")}\n"
+        self.compilejava += f"menus : {self.dicttojson.sub(string=dumps(formatargs(self.menus),indent=4),repl=r"\1:")}\n"
         self.compilejava += "};"
         self.compilejava += "}"
         self.compilejava += "}"
